@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}計畫列表{% endblock %}
+{% block content %}
+<div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-bold">計畫</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400">預算、執行率與核銷單關聯。</p>
+  </div>
+  {% if can_manage %}<a class="btn-primary btn-sm" href="{% url 'projects:create' %}">新增計畫</a>{% endif %}
+</div>
+<div class="card mb-5">
+  <form method="get" class="flex flex-wrap items-end gap-3">
+    <div class="form-row min-w-[220px]"><label class="form-label" for="q">關鍵字</label><input class="input" id="q" name="q" value="{{ filters.q }}" placeholder="計畫代碼或名稱"></div>
+    <div class="form-row"><label class="form-label" for="status">狀態</label><select class="select" id="status" name="status"><option value="">全部</option>{% for value,label in statuses %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <button type="submit" class="btn-primary btn-sm">篩選</button>
+    <a class="btn-secondary btn-sm" href="{% url 'projects:list' %}">清除</a>
+  </form>
+</div>
+<div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>代碼</th><th>名稱</th><th>類型</th><th>部門</th><th>狀態</th><th class="text-right">預算</th><th class="text-right">已核銷</th><th class="text-right">執行率</th></tr></thead>
+    <tbody>
+      {% for project in projects %}
+      <tr>
+        <td><a class="font-medium text-brand-700 hover:underline dark:text-brand-300" href="{% url 'projects:detail' project.pk %}">{{ project.code }}</a></td>
+        <td>{{ project.name }}</td>
+        <td>{{ project.project_type.name }}</td>
+        <td>{{ project.department.name }}</td>
+        <td><span class="badge-slate">{{ project.get_status_display }}</span></td>
+        <td class="text-right">${{ project.budget_total|money }}</td>
+        <td class="text-right">${{ project.spent_amount|money }}</td>
+        <td class="text-right"><span class="badge {% if project.is_over_budget %}badge-rose{% elif project.is_near_budget %}badge-amber{% else %}badge-emerald{% endif %}">{{ project.execution_rate|percent }}</span></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="py-10 text-center text-slate-500">尚無計畫。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}核銷單列表{% endblock %}
+{% block content %}
+<div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-bold">核銷單</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400">共 {{ total_count }} 筆，符合條件金額合計 ${{ total_amount|money }}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a class="btn-secondary btn-sm" href="?{% querystring format='csv' %}">匯出 CSV</a>
+    <a class="btn-secondary btn-sm" href="?{% querystring format='xlsx' %}">匯出 Excel</a>
+    {% if can_create %}<a class="btn-primary btn-sm" href="{% url 'expenses:create' %}">新增核銷</a>{% endif %}
+  </div>
+</div>
+
+<div class="card mb-5">
+  {% include "partials/form_errors.html" with form=form %}
+  <form method="get" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="form-row sm:col-span-2"><label class="form-label" for="{{ form.q.id_for_label }}">關鍵字</label>{{ form.q }}</div>
+    <div class="form-row"><label class="form-label" for="{{ form.date_from.id_for_label }}">起始日</label>{{ form.date_from }}</div>
+    <div class="form-row"><label class="form-label" for="{{ form.date_to.id_for_label }}">結束日</label>{{ form.date_to }}</div>
+    <div class="form-row"><label class="form-label">部門</label>{{ form.department }}</div>
+    <div class="form-row"><label class="form-label">計畫</label>{{ form.project }}</div>
+    <div class="form-row"><label class="form-label">計畫類型</label>{{ form.project_type }}</div>
+    <div class="form-row"><label class="form-label">費用科目</label>{{ form.category }}</div>
+    <div class="form-row"><label class="form-label">狀態</label>{{ form.status }}</div>
+    <div class="form-row"><label class="form-label">申請人</label>{{ form.applicant }}</div>
+    <div class="form-row"><label class="form-label">發票號碼</label>{{ form.invoice_no }}</div>
+    <div class="form-row"><label class="form-label">廠商</label>{{ form.vendor }}</div>
+    <div class="form-row"><label class="form-label">金額下限</label>{{ form.amount_min }}</div>
+    <div class="form-row"><label class="form-label">金額上限</label>{{ form.amount_max }}</div>
+    <div class="form-row"><label class="form-label">排序</label>{{ form.sort }}</div>
+    <div class="form-row"><label class="form-label">每頁</label>{{ form.page_size }}</div>
+    <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-4">
+      <button type="submit" class="btn-primary btn-sm">套用篩選</button>
+      <a class="btn-secondary btn-sm" href="{% url 'expenses:list' %}">清除</a>
+    </div>
+  </form>
+</div>
+
+<div class="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+  <span>顯示欄位：</span>
+  <button type="button" class="btn-secondary btn-sm" data-table="#expense-table" data-col-toggle="applicant">申請人</button>
+  <button type="button" class="btn-secondary btn-sm" data-table="#expense-table" data-col-toggle="department">部門</button>
+  <button type="button" class="btn-secondary btn-sm" data-table="#expense-table" data-col-toggle="project">計畫</button>
+  <button type="button" class="btn-secondary btn-sm" data-table="#expense-table" data-col-toggle="updated">更新時間</button>
+</div>
+
+<div class="table-wrap">
+  <table class="table" id="expense-table">
+    <thead><tr><th>單號</th><th>申請日</th><th data-col="applicant">申請人</th><th data-col="department">部門</th><th data-col="project">計畫</th><th>狀態</th><th class="text-right">金額</th><th data-col="updated">更新</th></tr></thead>
+    <tbody>
+      {% for expense in page %}
+      <tr>
+        <td><a class="font-medium text-brand-700 hover:underline dark:text-brand-300" href="{% url 'expenses:detail' expense.pk %}">{{ expense.number }}</a></td>
+        <td>{{ expense.apply_date|date:"Y-m-d" }}</td>
+        <td data-col="applicant">{{ expense.applicant.get_full_name|default:expense.applicant.username }}</td>
+        <td data-col="department">{{ expense.department.name }}</td>
+        <td data-col="project">{{ expense.project.code|default:"—" }}</td>
+        <td><span class="badge {{ expense.status|status_class }}">{{ expense.get_status_display }}</span></td>
+        <td class="text-right font-medium">${{ expense.total_amount|money }}</td>
+        <td data-col="updated" class="text-xs text-slate-500">{{ expense.updated_at|date:"m-d H:i" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="py-12 text-center text-slate-500">沒有符合條件的核銷單。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/pagination.html" with page=page %}
+{% endblock %}

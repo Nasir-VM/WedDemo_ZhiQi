@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ project.code }} {{ project.name }}{% endblock %}
+{% block content %}
+<div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+  <div>
+    <p class="text-sm text-slate-500 dark:text-slate-400">{{ project.project_type.name }} · {{ project.department.name }}</p>
+    <h1 class="text-2xl font-bold">{{ project.code }} {{ project.name }}</h1>
+    <span class="badge-slate mt-2">{{ project.get_status_display }}</span>
+  </div>
+  <div class="flex gap-2">
+    <a class="btn-secondary btn-sm" href="{% url 'projects:list' %}">返回列表</a>
+    {% if can_manage %}<a class="btn-primary btn-sm" href="{% url 'projects:update' project.pk %}">編輯</a>{% endif %}
+  </div>
+</div>
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="card"><p class="card-title">預算總額</p><p class="kpi-value">${{ project.budget_total|money }}</p></div>
+  <div class="card"><p class="card-title">已核銷</p><p class="kpi-value">${{ project.spent_amount|money }}</p></div>
+  <div class="card"><p class="card-title">剩餘預算</p><p class="kpi-value">${{ project.remaining_budget|money }}</p></div>
+  <div class="card"><p class="card-title">執行率</p><p class="kpi-value">{{ project.execution_rate|percent }}</p></div>
+</div>
+<div class="mt-5 grid gap-5 lg:grid-cols-3">
+  <section class="card lg:col-span-1">
+    <h2 class="card-title">計畫資訊</h2>
+    <dl class="mt-3 space-y-2 text-sm">
+      <div class="flex justify-between gap-3"><dt class="text-slate-500">負責人</dt><dd>{{ project.owner.get_full_name|default:project.owner.username }}</dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-slate-500">期間</dt><dd>{{ project.start_date|date:"Y-m-d" }} ~ {{ project.end_date|date:"Y-m-d" }}</dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-slate-500">預算控管</dt><dd>{{ project.get_budget_control_display }}</dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-slate-500">可見核銷合計</dt><dd>${{ visible_total|money }}</dd></div>
+    </dl>
+    {% if project.description %}<p class="mt-4 whitespace-pre-line text-sm">{{ project.description }}</p>{% endif %}
+  </section>
+  <section class="card lg:col-span-2">
+    <h2 class="card-title">最近核銷單</h2>
+    <div class="mt-3 overflow-x-auto">
+      <table class="table">
+        <thead><tr><th>單號</th><th>日期</th><th>申請人</th><th>狀態</th><th class="text-right">金額</th></tr></thead>
+        <tbody>
+          {% for expense in expenses %}
+          <tr><td><a class="text-brand-700 hover:underline dark:text-brand-300" href="{% url 'expenses:detail' expense.pk %}">{{ expense.number }}</a></td><td>{{ expense.apply_date|date:"Y-m-d" }}</td><td>{{ expense.applicant.get_full_name|default:expense.applicant.username }}</td><td><span class="badge {{ expense.status|status_class }}">{{ expense.get_status_display }}</span></td><td class="text-right">${{ expense.total_amount|money }}</td></tr>
+          {% empty %}
+          <tr><td colspan="5" class="py-8 text-center text-slate-500">尚無核銷單。</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

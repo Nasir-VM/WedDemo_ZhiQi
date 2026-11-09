@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}離線中{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-lg py-16 text-center">
+  <p class="text-5xl">離線</p>
+  <h1 class="mt-4 text-2xl font-bold">目前沒有網路連線</h1>
+  <p class="mt-2 text-slate-500 dark:text-slate-400">系統已快取靜態資源，但核銷資料需要連線才能讀取。請恢復網路後重新整理。</p>
+  <a class="btn-primary mt-6" href="/">回到首頁</a>
+</div>
+{% endblock %}

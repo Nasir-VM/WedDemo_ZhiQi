@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}登入 · 志氣企業核銷系統{% endblock %}
+{% block content %}
+<div class="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center">
+  <div class="card">
+    <div class="mb-6 text-center">
+      <span class="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-brand-600 text-xl font-bold text-white">志</span>
+      <h1 class="text-2xl font-bold">志氣企業核銷系統</h1>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">請使用公司帳號登入</p>
+    </div>
+    {% include "partials/form_errors.html" %}
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      {% for field in form %}
+        {% include "partials/field.html" with field=field %}
+      {% endfor %}
+      <button type="submit" class="btn-primary w-full">登入</button>
+    </form>
+    <p class="mt-4 text-center text-xs text-slate-500 dark:text-slate-400">
+      登入失敗 5 次將鎖定 15 分鐘。忘記密碼請聯絡系統管理員。
+    </p>
+  </div>
+</div>
+{% endblock %}

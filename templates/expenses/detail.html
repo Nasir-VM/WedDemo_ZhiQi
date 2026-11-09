@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ expense.number }}{% endblock %}
+{% block content %}
+<div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+  <div>
+    <p class="text-sm text-slate-500 dark:text-slate-400">核銷單</p>
+    <h1 class="text-2xl font-bold">{{ expense.number }}</h1>
+    <div class="mt-2 flex flex-wrap items-center gap-2">
+      <span class="badge {{ expense.status|status_class }}">{{ expense.get_status_display }}</span>
+      {% if expense.is_locked %}<span class="badge-slate">已鎖定</span>{% endif %}
+      {% if expense.version %}<span class="text-xs text-slate-500">版本 {{ expense.version }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a class="btn-secondary btn-sm" href="{% url 'expenses:list' %}">返回列表</a>
+    {% if can_edit %}<a class="btn-primary btn-sm" href="{% url 'expenses:update' expense.pk %}">編輯</a>{% endif %}
+    {% if can_edit %}
+    <form method="post" action="{% url 'expenses:delete' expense.pk %}" data-confirm="確定刪除 {{ expense.number }}？此操作無法復原。">
+      {% csrf_token %}<button type="submit" class="btn-danger btn-sm">刪除</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid gap-5 lg:grid-cols-3">
+  <div class="space-y-5 lg:col-span-2">
+    <section class="card">
+      <h2 class="card-title">基本資料</h2>
+      <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+        <div><dt class="text-slate-500 dark:text-slate-400">申請人</dt><dd class="font-medium">{{ expense.applicant.get_full_name|default:expense.applicant.username }}</dd></div>
+        <div><dt class="text-slate-500 dark:text-slate-400">部門</dt><dd class="font-medium">{{ expense.department.name }}</dd></div>
+        <div><dt class="text-slate-500 dark:text-slate-400">計畫類型</dt><dd class="font-medium">{{ expense.project_type.name|default:"—" }}</dd></div>
+        <div><dt class="text-slate-500 dark:text-slate-400">計畫</dt><dd class="font-medium">{% if expense.project %}{{ expense.project.code }} {{ expense.project.name }}{% else %}—{% endif %}</dd></div>
+        <div><dt class="text-slate-500 dark:text-slate-400">申請日期</dt><dd class="font-medium">{{ expense.apply_date|date:"Y-m-d" }}</dd></div>
+        <div><dt class="text-slate-500 dark:text-slate-400">建立時間</dt><dd class="font-medium">{{ expense.created_at|date:"Y-m-d H:i" }}</dd></div>
+        <div class="sm:col-span-2"><dt class="text-slate-500 dark:text-slate-400">事由</dt><dd class="mt-1 whitespace-pre-line">{{ expense.reason }}</dd></div>
+      </dl>
+      <p class="mt-4 text-right text-xl font-bold">合計 ${{ expense.total_amount|money }}</p>
+    </section>
+
+    <section class="card">
+      <div class="flex items-center justify-between">
+        <h2 class="card-title">發票與品項</h2>
+        {% if can_edit %}<a class="btn-primary btn-sm" href="{% url 'expenses:invoice_create' expense.pk %}">新增發票</a>{% endif %}
+      </div>
+      <div class="mt-3 space-y-4">
+        {% for invoice in expense.invoices.all %}
+        <article class="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p class="font-semibold">{{ invoice.seller_name }} <span class="text-xs text-slate-500">{{ invoice.get_invoice_type_display }}</span></p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">號碼 {{ invoice.invoice_no|default:"—" }} · 統編 {{ invoice.seller_tax_id|default:"—" }} · 開立 {{ invoice.issue_date|date:"Y-m-d" }}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-semibold">${{ invoice.total_amount|money }}</p>
+              <p class="text-xs text-slate-500">未稅 ${{ invoice.untaxed_amount|money }} · 稅 ${{ invoice.tax_amount|money }}</p>
+            </div>
+          </div>
+          <div class="mt-3 overflow-x-auto">
+            <table class="table">
+              <thead><tr><th>品名</th><th>科目</th><th class="text-right">數量</th><th class="text-right">單價</th><th class="text-right">小計</th></tr></thead>
+              <tbody>
+                {% for item in invoice.items.all %}
+                <tr><td>{{ item.name }}{% if item.spec %} <span class="text-xs text-slate-500">({{ item.spec }})</span>{% endif %}</td><td>{{ item.category.name }}</td><td class="text-right">{{ item.quantity }}</td><td class="text-right">${{ item.unit_price|money }}</td><td class="text-right">${{ item.subtotal|money }}</td></tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-slate-500">尚未新增品項。</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap gap-2 text-xs">
+              {% for attachment in invoice.attachments.all %}
+              <a class="btn-secondary btn-sm" href="{% url 'expenses:attachment_download' attachment.pk %}" target="_blank" rel="noopener">{{ attachment.original_name }}</a>
+              {% empty %}
+              <span class="text-slate-500">尚無附件</span>
+              {% endfor %}
+            </div>
+            <div class="flex flex-wrap gap-2">
+              {% if can_edit %}
+              <form method="post" action="{% url 'expenses:attachment_upload' invoice.pk %}" enctype="multipart/form-data" class="flex items-center gap-2">
+                {% csrf_token %}
+                <input type="file" name="file" accept="image/jpeg,image/png,application/pdf" required class="block text-xs text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-slate-200 file:px-3 file:py-1.5 file:text-xs dark:text-slate-300 dark:file:bg-slate-700">
+                <button type="submit" class="btn-secondary btn-sm">上傳附件</button>
+              </form>
+              <a class="btn-secondary btn-sm" href="{% url 'expenses:invoice_update' invoice.pk %}">編輯發票</a>
+              <form method="post" action="{% url 'expenses:invoice_delete' invoice.pk %}" data-confirm="確定刪除此發票？">
+                {% csrf_token %}<button type="submit" class="btn-danger btn-sm">刪除</button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+        {% empty %}
+        <p class="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700">尚未新增發票。請先新增發票與品項，系統會自動計算總金額。</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">簽核紀錄</h2>
+      <ol class="mt-3 space-y-3">
+        {% for log in expense.logs.all %}
+        <li class="flex gap-3 text-sm">
+          <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-500"></span>
+          <div>
+            <p class="font-medium">{{ log.get_action_display }} <span class="text-xs text-slate-500">{{ log.created_at|date:"Y-m-d H:i" }}</span></p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ log.actor.get_full_name|default:log.actor.username|default:"系統" }}{% if log.from_status %} · {{ log.from_status }} → {{ log.to_status }}{% endif %}</p>
+            {% if log.comment %}<p class="mt-1 whitespace-pre-line">{{ log.comment }}</p>{% endif %}
+          </div>
+        </li>
+        {% empty %}
+        <li class="text-sm text-slate-500">尚無簽核紀錄。</li>
+        {% endfor %}
+      </ol>
+    </section>
+  </div>
+
+  <aside class="space-y-5">
+    {% if has_actions %}
+    <section class="card">
+      <h2 class="card-title">簽核操作</h2>
+      <form method="post" action="{% url 'expenses:action' expense.pk %}" class="mt-3 space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="version" value="{{ expense.version }}">
+        <div class="form-row">
+          <label class="form-label" for="comment">意見（退回／駁回必填）</label>
+          <textarea class="textarea" id="comment" name="comment" rows="3" placeholder="請輸入簽核意見"></textarea>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          {% for action,label in action_labels.items %}
+          {% if available_actions|get_item:action %}
+          <button type="submit" name="action" value="{{ action }}" class="{% if action == 'reject' or action == 'return' %}btn-danger{% else %}btn-primary{% endif %} btn-sm">{{ label }}</button>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </form>
+    </section>
+    {% endif %}
+    <section class="card">
+      <h2 class="card-title">流程狀態</h2>
+      <ol class="mt-3 space-y-2 text-sm">
+        <li class="flex justify-between"><span class="text-slate-500">送審</span><span>{{ expense.submitted_at|date:"m-d H:i"|default:"—" }}</span></li>
+        <li class="flex justify-between"><span class="text-slate-500">核准</span><span>{{ expense.approved_at|date:"m-d H:i"|default:"—" }}</span></li>
+        <li class="flex justify-between"><span class="text-slate-500">撥款</span><span>{{ expense.paid_at|date:"m-d H:i"|default:"—" }}</span></li>
+      </ol>
+    </section>
+  </aside>
+</div>
+{% endblock %}

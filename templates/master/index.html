@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}基礎資料{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="text-2xl font-bold">基礎資料</h1>
+  <p class="text-sm text-slate-500 dark:text-slate-400">維護部門、成本中心、廠商、費用科目與計畫類型。</p>
+</div>
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  {% for item in items %}
+  <a class="card no-underline transition hover:border-brand-400 hover:shadow-md" href="{% url 'master:list' item.kind %}">
+    <h2 class="text-lg font-semibold">{{ item.title }}</h2>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">檢視與維護{{ item.title }}</p>
+  </a>
+  {% empty %}
+  <p class="text-sm text-slate-500">您沒有維護基礎資料的權限。</p>
+  {% endfor %}
+</div>
+{% endblock %}

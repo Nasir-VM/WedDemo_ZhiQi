@@ -1,0 +1,18 @@
+{% load ui %}
+{% if page.paginator.num_pages > 1 %}
+<nav class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm" aria-label="分頁">
+  <p class="text-slate-500 dark:text-slate-400">共 {{ page.paginator.count }} 筆 · 第 {{ page.number }} / {{ page.paginator.num_pages }} 頁</p>
+  <div class="flex items-center gap-2">
+    {% if page.has_previous %}
+    <a class="btn-secondary btn-sm" href="?{% querystring page=page.previous_page_number %}">上一頁</a>
+    {% else %}
+    <span class="btn-secondary btn-sm opacity-40">上一頁</span>
+    {% endif %}
+    {% if page.has_next %}
+    <a class="btn-secondary btn-sm" href="?{% querystring page=page.next_page_number %}">下一頁</a>
+    {% else %}
+    <span class="btn-secondary btn-sm opacity-40">下一頁</span>
+    {% endif %}
+  </div>
+</nav>
+{% endif %}

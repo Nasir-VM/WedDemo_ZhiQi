@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}通知{% endblock %}
+{% block content %}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-bold">站內通知</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400">共 {{ page.paginator.count }} 則</p>
+  </div>
+  <form method="post" action="{% url 'notifications:mark_all_read' %}">
+    {% csrf_token %}<button type="submit" class="btn-secondary btn-sm">全部標為已讀</button>
+  </form>
+</div>
+<div class="space-y-3">
+  {% for notification in page %}
+  <article class="card {% if not notification.is_read %}border-brand-300 dark:border-brand-800{% endif %}">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="badge {% if notification.level == 'success' %}badge-emerald{% elif notification.level == 'warning' %}badge-amber{% elif notification.level == 'danger' %}badge-rose{% else %}badge-sky{% endif %}">{{ notification.get_level_display }}</span>
+          <h2 class="font-semibold">{{ notification.title }}</h2>
+          {% if not notification.is_read %}<span class="badge-rose">未讀</span>{% endif %}
+        </div>
+        {% if notification.message %}<p class="mt-2 whitespace-pre-line text-sm text-slate-600 dark:text-slate-300">{{ notification.message }}</p>{% endif %}
+        <p class="mt-2 text-xs text-slate-500">{{ notification.created_at|date:"Y-m-d H:i" }}</p>
+      </div>
+      {% if not notification.is_read %}
+      <form method="post" action="{% url 'notifications:mark_read' notification.pk %}">
+        {% csrf_token %}<button type="submit" class="btn-secondary btn-sm">標為已讀</button>
+      </form>
+      {% endif %}
+    </div>
+  </article>
+  {% empty %}
+  <div class="card py-12 text-center text-slate-500">目前沒有通知。</div>
+  {% endfor %}
+</div>
+{% include "partials/pagination.html" with page=page %}
+{% endblock %}

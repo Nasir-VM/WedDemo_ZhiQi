@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}使用者管理{% endblock %}
+{% block content %}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-bold">使用者管理</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400">建立帳號、調整角色與重設密碼。</p>
+  </div>
+  <a class="btn-primary" href="{% url 'accounts:user_create' %}">新增使用者</a>
+</div>
+<div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>帳號</th><th>姓名</th><th>角色</th><th>部門</th><th>狀態</th><th>2FA</th><th class="text-right">操作</th></tr></thead>
+    <tbody>
+      {% for item in users %}
+      <tr>
+        <td class="font-medium">{{ item.username }}</td>
+        <td>{{ item.get_full_name|default:"—" }}</td>
+        <td>{{ item.get_role_display }}</td>
+        <td>{{ item.department.name|default:"—" }}</td>
+        <td>{% if item.is_active %}<span class="badge-emerald">啟用</span>{% else %}<span class="badge-slate">停用</span>{% endif %}</td>
+        <td>{% if item.totp_enabled %}<span class="badge-emerald">已啟用</span>{% else %}<span class="badge-slate">未啟用</span>{% endif %}</td>
+        <td>
+          <div class="flex justify-end gap-2">
+            <a class="btn-secondary btn-sm" href="{% url 'accounts:user_update' item.pk %}">編輯</a>
+            <form method="post" action="{% url 'accounts:user_reset_password' item.pk %}" data-confirm="確定重設 {{ item.username }} 的密碼？新密碼將顯示一次。">
+              {% csrf_token %}
+              <button type="submit" class="btn-secondary btn-sm">重設密碼</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="py-10 text-center text-slate-500">尚無使用者。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

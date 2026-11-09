@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}停用兩步驟驗證{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-md">
+  <div class="card">
+    <h1 class="text-xl font-bold">停用兩步驟驗證</h1>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">停用後帳號僅受密碼保護，請確認您了解風險。</p>
+    {% include "partials/form_errors.html" %}
+    <form method="post" class="mt-4 space-y-4">
+      {% csrf_token %}
+      {% for field in form %}{% include "partials/field.html" with field=field %}{% endfor %}
+      <div class="flex gap-2">
+        <button type="submit" class="btn-danger">確認停用</button>
+        <a class="btn-secondary" href="{% url 'accounts:profile' %}">取消</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

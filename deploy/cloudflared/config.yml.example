@@ -1,0 +1,13 @@
+# 具名通道（named tunnel）範例；docker compose 預設使用 token 模式，不需要此檔。
+# 若要改用 credentials-file 模式，請把本檔複製為 config.yml，並在 compose 掛載：
+#   - ./deploy/cloudflared:/etc/cloudflared:ro
+# 並把 cloudflared command 改為：
+#   tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+
+tunnel: <TUNNEL_ID>
+credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  - hostname: erp.example.com
+    service: http://web:8000
+  - service: http_status:404

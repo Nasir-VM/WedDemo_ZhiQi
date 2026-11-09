@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}電視模式 · 營運儀表板{% endblock %}
+{% block content %}
+<div data-tv-refresh="60">
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <p class="text-sm text-slate-500 dark:text-slate-400">{{ data.as_of }} · 每 60 秒自動更新</p>
+      <h1 class="text-3xl font-bold">營運即時看板</h1>
+    </div>
+    <a class="btn-secondary btn-sm" href="{% url 'dashboard:index' %}">返回儀表板</a>
+  </div>
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="card"><p class="card-title">本月核銷</p><p class="mt-2 text-4xl font-bold">${{ data.kpis.month_total|money }}</p></div>
+    <div class="card"><p class="card-title">待審核</p><p class="mt-2 text-4xl font-bold">{{ data.kpis.pending }}</p></div>
+    <div class="card"><p class="card-title">預算執行率</p><p class="mt-2 text-4xl font-bold">{{ data.kpis.budget_rate|percent }}</p></div>
+    <div class="card"><p class="card-title">年度核銷</p><p class="mt-2 text-4xl font-bold">${{ data.company.year_total|money }}</p></div>
+  </div>
+  <div id="dashboard-charts" data-charts="{{ charts_json }}" class="mt-5 grid gap-5 lg:grid-cols-2">
+    <div class="card lg:col-span-2"><h2 class="card-title">近 12 個月核銷趨勢</h2><div class="mt-4 h-80"><canvas id="chart-trend" role="img" aria-label="近 12 個月核銷趨勢"></canvas></div></div>
+    <div class="card"><h2 class="card-title">部門占比</h2><div class="mt-4 h-64"><canvas id="chart-department" role="img" aria-label="部門占比"></canvas></div></div>
+    <div class="card"><h2 class="card-title">費用科目占比</h2><div class="mt-4 h-64"><canvas id="chart-category" role="img" aria-label="費用科目占比"></canvas></div></div>
+  </div>
+</div>
+{% endblock %}

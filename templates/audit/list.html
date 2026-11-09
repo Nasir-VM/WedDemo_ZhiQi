@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}稽核日誌{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="text-2xl font-bold">稽核日誌</h1>
+  <p class="text-sm text-slate-500 dark:text-slate-400">登入、資料異動、匯出與備份紀錄（唯讀）。</p>
+</div>
+<div class="card mb-5">
+  <form method="get" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div class="form-row"><label class="form-label" for="q">關鍵字</label><input class="input" id="q" name="q" value="{{ filters.q }}" placeholder="帳號、物件、IP"></div>
+    <div class="form-row"><label class="form-label" for="action">動作</label><select class="select" id="action" name="action"><option value="">全部</option>{% for value,label in actions %}<option value="{{ value }}" {% if filters.action == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="form-row"><label class="form-label" for="model">物件類型</label><select class="select" id="model" name="model"><option value="">全部</option>{% for model in models %}<option value="{{ model }}" {% if filters.model == model %}selected{% endif %}>{{ model }}</option>{% endfor %}</select></div>
+    <div class="form-row"><label class="form-label" for="date_from">起始日</label><input class="input" type="date" id="date_from" name="date_from" value="{{ filters.date_from }}"></div>
+    <div class="form-row"><label class="form-label" for="date_to">結束日</label><input class="input" type="date" id="date_to" name="date_to" value="{{ filters.date_to }}"></div>
+    <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-5"><button type="submit" class="btn-primary btn-sm">套用</button><a class="btn-secondary btn-sm" href="{% url 'audit:list' %}">清除</a></div>
+  </form>
+</div>
+<div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>時間</th><th>使用者</th><th>動作</th><th>物件</th><th>IP</th><th>差異</th></tr></thead>
+    <tbody>
+      {% for log in page %}
+      <tr>
+        <td class="text-xs">{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+        <td>{% firstof log.username log.user.username "—" %}</td>
+        <td><span class="badge-slate">{{ log.get_action_display }}</span></td>
+        <td><span class="block">{{ log.model_label|default:"—" }}</span><span class="text-xs text-slate-500">{{ log.object_repr|default:log.object_id }}</span></td>
+        <td class="text-xs">{{ log.ip|default:"—" }}</td>
+        <td>
+          {% if log.changes %}
+          <details><summary class="cursor-pointer text-xs text-brand-600 dark:text-brand-300">檢視</summary><pre class="mt-2 max-w-md overflow-x-auto rounded-lg bg-slate-100 p-2 text-xs dark:bg-slate-800">{{ log.pretty_changes }}</pre></details>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="py-10 text-center text-slate-500">尚無稽核紀錄。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/pagination.html" with page=page %}
+{% endblock %}

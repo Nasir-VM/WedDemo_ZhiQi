@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}個人資料{% endblock %}
+{% block content %}
+<div class="grid gap-6 lg:grid-cols-3">
+  <div class="lg:col-span-2">
+    <div class="card">
+      <h1 class="text-xl font-bold">個人資料</h1>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">帳號 {{ user.username }} · {{ user.get_role_display }}{% if user.department %} · {{ user.department.name }}{% endif %}</p>
+      {% include "partials/form_errors.html" %}
+      <form method="post" class="mt-4 grid gap-4 sm:grid-cols-2">
+        {% csrf_token %}
+        {% for field in form %}{% include "partials/field.html" with field=field %}{% endfor %}
+        <div class="sm:col-span-2"><button type="submit" class="btn-primary">儲存</button></div>
+      </form>
+    </div>
+  </div>
+  <aside class="space-y-4">
+    <div class="card">
+      <h2 class="card-title">兩步驟驗證</h2>
+      <p class="mt-2 text-sm {% if user.totp_enabled %}text-emerald-600 dark:text-emerald-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">
+        {% if user.totp_enabled %}已啟用{% else %}尚未啟用{% endif %}
+      </p>
+      {% if user.totp_enabled %}
+      <a class="btn-secondary mt-3 w-full" href="{% url 'accounts:totp_disable' %}">停用</a>
+      {% else %}
+      <a class="btn-primary mt-3 w-full" href="{% url 'accounts:totp_setup' %}">立即啟用</a>
+      {% endif %}
+    </div>
+    <div class="card">
+      <h2 class="card-title">安全資訊</h2>
+      <dl class="mt-2 space-y-2 text-sm">
+        <div class="flex justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">最後登入</dt><dd>{{ user.last_login|date:"Y-m-d H:i"|default:"—" }}</dd></div>
+        <div class="flex justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">密碼變更</dt><dd>{{ user.last_password_change|date:"Y-m-d H:i"|default:"—" }}</dd></div>
+        <div class="flex justify-between gap-3"><dt class="text-slate-500 dark:text-slate-400">員工編號</dt><dd>{{ user.employee_no|default:"—" }}</dd></div>
+      </dl>
+      <a class="btn-secondary mt-3 w-full" href="{% url 'accounts:password_change' %}">變更密碼</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}

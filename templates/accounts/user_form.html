@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{% if is_create %}新增使用者{% else %}編輯使用者{% endif %}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <div class="mb-4 flex items-center justify-between">
+    <h1 class="text-2xl font-bold">{% if is_create %}新增使用者{% else %}編輯使用者：{{ object.username }}{% endif %}</h1>
+    <a class="btn-secondary" href="{% url 'accounts:user_list' %}">返回列表</a>
+  </div>
+  <div class="card">
+    {% include "partials/form_errors.html" %}
+    <form method="post" class="grid gap-4 sm:grid-cols-2">
+      {% csrf_token %}
+      {% for field in form %}{% include "partials/field.html" with field=field %}{% endfor %}
+      <div class="sm:col-span-2 flex gap-2">
+        <button type="submit" class="btn-primary">{% if is_create %}建立{% else %}儲存{% endif %}</button>
+        <a class="btn-secondary" href="{% url 'accounts:user_list' %}">取消</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

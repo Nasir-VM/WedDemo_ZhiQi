@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}儀表板 · 志氣企業核銷系統{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <p class="text-sm text-slate-500 dark:text-slate-400">{{ data.as_of }} · {{ data.company.year }} 年度</p>
+    <h1 class="text-2xl font-bold">營運儀表板</h1>
+  </div>
+  <div class="flex gap-2">
+    <a class="btn-secondary btn-sm" href="{% url 'dashboard:tv' %}" target="_blank" rel="noopener">電視模式</a>
+    {% if user.can_create_expense %}<a class="btn-primary btn-sm" href="{% url 'expenses:create' %}">新增核銷</a>{% endif %}
+  </div>
+</div>
+
+{% if data.announcement %}
+<div class="alert-info mb-5"><span>{{ data.announcement }}</span></div>
+{% endif %}
+
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="card"><p class="card-title">本月核銷金額</p><p class="kpi-value">${{ data.kpis.month_total|money }}</p><p class="mt-1 text-xs text-slate-500">已核准與已撥款</p></div>
+  <div class="card"><p class="card-title">待我審核</p><p class="kpi-value">{{ data.kpis.pending }}</p><p class="mt-1 text-xs text-slate-500">需要您處理的單據</p></div>
+  <div class="card"><p class="card-title">審核中</p><p class="kpi-value">{{ data.kpis.in_review }}</p><p class="mt-1 text-xs text-slate-500">全公司流程中</p></div>
+  <div class="card"><p class="card-title">已核准未撥款</p><p class="kpi-value">${{ data.kpis.approved_unpaid|money }}</p><p class="mt-1 text-xs text-slate-500">財務待撥款</p></div>
+</div>
+
+<div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="card"><p class="card-title">預算執行率</p><p class="kpi-value">{{ data.kpis.budget_rate|percent }}</p><progress class="budget-progress mt-2" value="{{ data.kpis.budget_rate }}" max="100" aria-label="預算執行率"></progress></div>
+  <div class="card"><p class="card-title">預算總額</p><p class="kpi-value">${{ data.kpis.budget_total|money }}</p><p class="mt-1 text-xs text-slate-500">可見計畫合計</p></div>
+  <div class="card"><p class="card-title">已核銷</p><p class="kpi-value">${{ data.kpis.spent_total|money }}</p><p class="mt-1 text-xs text-slate-500">可見計畫合計</p></div>
+  <div class="card"><p class="card-title">年度核銷</p><p class="kpi-value">${{ data.company.year_total|money }}</p><p class="mt-1 text-xs text-slate-500">{{ data.company.approved }} 張已核准</p></div>
+</div>
+
+<div id="dashboard-charts" data-charts="{{ charts_json }}" class="mt-6 grid gap-5 lg:grid-cols-2">
+  <div class="card lg:col-span-2">
+    <div class="flex items-center justify-between"><h2 class="card-title">近 12 個月核銷趨勢</h2><span class="text-xs text-slate-500">TWD</span></div>
+    <div class="mt-4 h-72"><canvas id="chart-trend" aria-label="近 12 個月核銷趨勢圖" role="img"></canvas></div>
+  </div>
+  <div class="card">
+    <h2 class="card-title">部門占比</h2>
+    <div class="mt-4 h-64"><canvas id="chart-department" aria-label="部門核銷占比圖" role="img"></canvas></div>
+  </div>
+  <div class="card">
+    <h2 class="card-title">費用科目占比</h2>
+    <div class="mt-4 h-64"><canvas id="chart-category" aria-label="費用科目占比圖" role="img"></canvas></div>
+  </div>
+  <div class="card lg:col-span-2">
+    <h2 class="card-title">主要計畫預算 vs 已核銷</h2>
+    <div class="mt-4 h-72"><canvas id="chart-project" aria-label="計畫預算與已核銷比較圖" role="img"></canvas></div>
+  </div>
+</div>
+
+<div class="mt-6 grid gap-5 lg:grid-cols-2">
+  <section class="card">
+    <div class="flex items-center justify-between"><h2 class="card-title">待辦核銷</h2><a class="text-sm text-brand-600 hover:underline dark:text-brand-300" href="{% url 'expenses:list' %}?status=manager_review">查看全部</a></div>
+    <div class="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
+      {% for row in data.todos %}
+      <a class="flex items-center justify-between gap-3 py-3 no-underline hover:bg-slate-50 dark:hover:bg-slate-800/60" href="{{ row.url }}">
+        <span><span class="block text-sm font-medium">{{ row.number }}</span><span class="block text-xs text-slate-500">{{ row.applicant }} · {{ row.department }}</span></span>
+        <span class="text-right"><span class="block text-sm font-semibold">${{ row.total|money }}</span><span class="badge {{ row.status|status_class }}">{{ row.status_label }}</span></span>
+      </a>
+      {% empty %}
+      <p class="py-8 text-center text-sm text-slate-500">目前沒有待辦事項。</p>
+      {% endfor %}
+    </div>
+  </section>
+  <section class="card">
+    <div class="flex items-center justify-between"><h2 class="card-title">最新動態</h2><a class="text-sm text-brand-600 hover:underline dark:text-brand-300" href="{% url 'expenses:list' %}">查看全部</a></div>
+    <div class="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
+      {% for row in data.latest %}
+      <a class="flex items-center justify-between gap-3 py-3 no-underline hover:bg-slate-50 dark:hover:bg-slate-800/60" href="{{ row.url }}">
+        <span><span class="block text-sm font-medium">{{ row.number }}</span><span class="block text-xs text-slate-500">{{ row.applicant }} · {{ row.updated_at }}</span></span>
+        <span class="text-right"><span class="block text-sm font-semibold">${{ row.total|money }}</span><span class="badge {{ row.status|status_class }}">{{ row.status_label }}</span></span>
+      </a>
+      {% empty %}
+      <p class="py-8 text-center text-sm text-slate-500">尚無核銷紀錄。</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+{% if data.warnings %}
+<section class="card mt-6">
+  <h2 class="card-title">預算警示（執行率 ≥ 90%）</h2>
+  <div class="mt-3 grid gap-3 sm:grid-cols-2">
+    {% for warning in data.warnings %}
+    <a class="rounded-xl border {% if warning.over %}border-rose-300 bg-rose-50 dark:border-rose-900 dark:bg-rose-950/40{% else %}border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40{% endif %} p-4 no-underline" href="{{ warning.url }}">
+      <div class="flex items-center justify-between gap-3">
+        <span class="font-medium">{{ warning.code }} {{ warning.name }}</span>
+        <span class="badge {% if warning.over %}badge-rose{% else %}badge-amber{% endif %}">{{ warning.rate|percent }}</span>
+      </div>
+      <p class="mt-1 text-xs text-slate-600 dark:text-slate-300">已核銷 ${{ warning.spent|money }} / 預算 ${{ warning.budget|money }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

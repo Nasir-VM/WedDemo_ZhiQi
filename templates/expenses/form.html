@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{% if is_create %}新增核銷單{% else %}編輯 {{ expense.number }}{% endif %}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <div class="mb-4 flex items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold">{% if is_create %}新增核銷單{% else %}編輯核銷單{% endif %}</h1>
+    {% if not is_create %}<a class="btn-secondary btn-sm" href="{% url 'expenses:detail' expense.pk %}">返回詳情</a>{% endif %}
+  </div>
+  <div class="card">
+    {% include "partials/form_errors.html" %}
+    <form method="post" class="grid gap-4 sm:grid-cols-2">
+      {% csrf_token %}
+      {% if not is_create %}<input type="hidden" name="version" value="{{ expense.version }}">{% endif %}
+      {% for field in form %}{% include "partials/field.html" with field=field %}{% endfor %}
+      <div class="flex gap-2 sm:col-span-2">
+        <button type="submit" class="btn-primary">{% if is_create %}建立並繼續{% else %}儲存{% endif %}</button>
+        <a class="btn-secondary" href="{% if is_create %}{% url 'expenses:list' %}{% else %}{% url 'expenses:detail' expense.pk %}{% endif %}">取消</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

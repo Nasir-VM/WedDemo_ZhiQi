@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}啟用兩步驟驗證{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-xl">
+  <div class="card">
+    <h1 class="text-xl font-bold">啟用兩步驟驗證</h1>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">請在 Google Authenticator、Microsoft Authenticator 或 1Password 中手動輸入下列密鑰，再輸入 App 產生的 6 位數代碼。</p>
+    <div class="mt-4 rounded-xl bg-slate-100 p-4 dark:bg-slate-800">
+      <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">密鑰</p>
+      <p class="mt-1 break-all font-mono text-lg font-semibold">{{ secret }}</p>
+      <p class="mt-3 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">otpauth URI</p>
+      <p class="mt-1 break-all font-mono text-xs">{{ uri }}</p>
+    </div>
+    {% include "partials/form_errors.html" %}
+    <form method="post" class="mt-5 space-y-4">
+      {% csrf_token %}
+      {% for field in form %}{% include "partials/field.html" with field=field %}{% endfor %}
+      <div class="flex gap-2">
+        <button type="submit" class="btn-primary">確認啟用</button>
+        <a class="btn-secondary" href="{% url 'accounts:profile' %}">取消</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% load static ui %}<!doctype html>
+<html lang="zh-Hant" class="h-full scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b39b5">
+  <meta name="description" content="志氣企業核銷系統：核銷、簽核、預算與費用分析。">
+  <title>{% block title %}志氣企業核銷系統{% endblock %}</title>
+  <link rel="manifest" href="{% url 'manifest' %}">
+  <link rel="icon" href="{% static 'icons/icon-192.png' %}" type="image/png">
+  <link rel="apple-touch-icon" href="{% static 'icons/icon-192.png' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+  <script src="{% static 'vendor/chart.umd.min.js' %}" defer></script>
+  <script src="{% static 'js/app.js' %}" defer></script>
+</head>
+<body class="min-h-full">
+  <a class="skip-link" href="#main">跳至主要內容</a>
+  {% if user.is_authenticated %}
+  <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
+    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'dashboard:index' %}" class="flex items-center gap-2 text-brand-700 no-underline dark:text-brand-200">
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-sm font-bold text-white">志</span>
+          <span class="hidden text-base font-semibold sm:block">{{ company.company_name|default:"志氣企業" }}</span>
+        </a>
+        <button type="button" class="btn-ghost btn-sm md:hidden" data-nav-toggle aria-controls="main-nav" aria-expanded="false">選單</button>
+      </div>
+      <nav id="main-nav" data-nav-panel class="hidden items-center gap-1 md:flex">
+        <a class="nav-link {% if request.path == '/' %}nav-link-active{% endif %}" href="{% url 'dashboard:index' %}">儀表板</a>
+        <a class="nav-link {% if request.path|slice:':9' == '/expenses' %}nav-link-active{% endif %}" href="{% url 'expenses:list' %}">核銷單</a>
+        {% if user.can_create_expense %}
+        <a class="nav-link" href="{% url 'expenses:create' %}">新增核銷</a>
+        {% endif %}
+        <a class="nav-link {% if request.path|slice:':9' == '/projects' %}nav-link-active{% endif %}" href="{% url 'projects:list' %}">計畫</a>
+        <a class="nav-link {% if request.path|slice:':8' == '/reports' %}nav-link-active{% endif %}" href="{% url 'reports:index' %}">報表</a>
+        <a class="nav-link" href="{% url 'expenses:list' %}?status=manager_review">待審核{% if pending_review_count %} <span class="badge-amber">{{ pending_review_count }}</span>{% endif %}</a>
+        <a class="nav-link" href="{% url 'notifications:list' %}">通知{% if unread_notifications %} <span class="badge-rose">{{ unread_notifications }}</span>{% endif %}</a>
+        {% if user.can_manage_master or user.can_manage_org %}
+        <a class="nav-link {% if request.path|slice:':7' == '/master' %}nav-link-active{% endif %}" href="{% url 'master:index' %}">基礎資料</a>
+        {% endif %}
+        {% if user.can_manage_org %}
+        <a class="nav-link" href="{% url 'accounts:user_list' %}">使用者</a>
+        {% endif %}
+        {% if user.is_admin_role or user.role == 'auditor' %}
+        <a class="nav-link" href="{% url 'audit:list' %}">稽核</a>
+        {% endif %}
+      </nav>
+      <div class="flex items-center gap-2">
+        <button type="button" class="btn-ghost btn-sm" data-theme-toggle aria-label="切換深色模式">主題</button>
+        <details class="relative">
+          <summary class="btn-secondary btn-sm cursor-pointer list-none">{{ user.get_full_name|default:user.username }}</summary>
+          <div class="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            <p class="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">{{ user.get_role_display }}{% if user.department %} · {{ user.department.name }}{% endif %}</p>
+            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{% url 'accounts:profile' %}">個人資料</a>
+            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{% url 'accounts:password_change' %}">變更密碼</a>
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40">登出</button>
+            </form>
+          </div>
+        </details>
+      </div>
+    </div>
+  </header>
+  {% endif %}
+  <main id="main" class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
+    {% include "partials/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="mx-auto max-w-7xl px-4 py-8 text-xs text-slate-500 sm:px-6 dark:text-slate-400">
+    <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-4 dark:border-slate-800">
+      <span>{{ company.company_name|default:"志氣企業" }} · 核銷管理系統 v{{ app_version }}</span>
+      <span>所有金額以新台幣 TWD 計價 · 時區 Asia/Taipei</span>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}費用報表{% endblock %}
+{% block content %}
+<div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-bold">費用報表</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400">{{ data.year }} 年度 · 已核准與已撥款單據</p>
+  </div>
+  <a class="btn-secondary btn-sm" href="{% url 'expenses:export' %}?format=xlsx&date_from={{ year }}-01-01&date_to={{ year }}-12-31">匯出年度 Excel</a>
+</div>
+
+<div class="card mb-5">
+  <form method="get" class="flex flex-wrap items-end gap-3">
+    <div class="form-row"><label class="form-label" for="year">年度</label><select class="select" id="year" name="year">{% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}</select></div>
+    <div class="form-row"><label class="form-label" for="quarter">季度</label><select class="select" id="quarter" name="quarter"><option value="">全年</option>{% for q in "1234" %}<option value="{{ q }}" {% if quarter|stringformat:"s" == q %}selected{% endif %}>Q{{ q }}</option>{% endfor %}</select></div>
+    <div class="form-row"><label class="form-label" for="month">月份</label><select class="select" id="month" name="month"><option value="">全部</option>{% for m in "123456789" %}<option value="{{ m }}" {% if month|stringformat:"s" == m %}selected{% endif %}>{{ m }} 月</option>{% endfor %}<option value="10" {% if month == 10 %}selected{% endif %}>10 月</option><option value="11" {% if month == 11 %}selected{% endif %}>11 月</option><option value="12" {% if month == 12 %}selected{% endif %}>12 月</option></select></div>
+    <button type="submit" class="btn-primary btn-sm">套用</button>
+  </form>
+</div>
+
+<div class="grid gap-4 sm:grid-cols-3">
+  <div class="card"><p class="card-title">期間核銷總額</p><p class="kpi-value">${{ data.totals.total|money }}</p></div>
+  <div class="card"><p class="card-title">單據筆數</p><p class="kpi-value">{{ data.totals.count }}</p></div>
+  <div class="card"><p class="card-title">平均每筆</p><p class="kpi-value">${% if data.totals.count %}{{ data.totals.total|money }}{% else %}0{% endif %}</p><p class="mt-1 text-xs text-slate-500">總額 / 筆數（詳見明細）</p></div>
+</div>
+
+<div id="dashboard-charts" data-charts="{{ charts_json }}" class="mt-6 grid gap-5 lg:grid-cols-2">
+  <div class="card lg:col-span-2"><h2 class="card-title">每月核銷金額</h2><div class="mt-4 h-72"><canvas id="chart-trend" role="img" aria-label="每月核銷金額"></canvas></div></div>
+  <div class="card"><h2 class="card-title">部門占比</h2><div class="mt-4 h-64"><canvas id="chart-department" role="img" aria-label="部門占比"></canvas></div></div>
+  <div class="card"><h2 class="card-title">費用科目占比</h2><div class="mt-4 h-64"><canvas id="chart-category" role="img" aria-label="費用科目占比"></canvas></div></div>
+</div>
+
+<div class="mt-6 grid gap-5 lg:grid-cols-2">
+  <section class="card">
+    <h2 class="card-title">部門明細</h2>
+    <table class="table mt-3"><thead><tr><th>部門</th><th class="text-right">筆數</th><th class="text-right">金額</th></tr></thead><tbody>
+      {% for row in data.by_department %}<tr><td>{{ row.department__name|default:"未指定" }}</td><td class="text-right">{{ row.count }}</td><td class="text-right">${{ row.total|money }}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-slate-500">無資料</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+  <section class="card">
+    <h2 class="card-title">費用科目明細</h2>
+    <table class="table mt-3"><thead><tr><th>科目</th><th class="text-right">金額</th></tr></thead><tbody>
+      {% for row in data.by_category %}<tr><td>{{ row.category__name }}</td><td class="text-right">${{ row.total|money }}</td></tr>{% empty %}<tr><td colspan="2" class="text-center text-slate-500">無資料</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+  <section class="card">
+    <h2 class="card-title">計畫明細</h2>
+    <table class="table mt-3"><thead><tr><th>計畫</th><th class="text-right">筆數</th><th class="text-right">金額</th></tr></thead><tbody>
+      {% for row in data.by_project %}<tr><td>{{ row.project__code|default:"未指定" }} {{ row.project__name|default:"" }}</td><td class="text-right">{{ row.count }}</td><td class="text-right">${{ row.total|money }}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-slate-500">無資料</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+  <section class="card">
+    <h2 class="card-title">申請人排行（前 20）</h2>
+    <table class="table mt-3"><thead><tr><th>申請人</th><th class="text-right">筆數</th><th class="text-right">金額</th></tr></thead><tbody>
+      {% for row in data.by_applicant %}<tr><td>{{ row.applicant__last_name }}{{ row.applicant__first_name|default:row.applicant__username }}</td><td class="text-right">{{ row.count }}</td><td class="text-right">${{ row.total|money }}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-slate-500">無資料</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+
+<section class="card mt-5">
+  <h2 class="card-title">狀態分布</h2>
+  <div class="mt-3 flex flex-wrap gap-2">
+    {% for row in data.status_rows %}<span class="badge-slate">{{ row.label }}：{{ row.count }} 筆 / ${{ row.total|money }}</span>{% empty %}<span class="text-sm text-slate-500">無資料</span>{% endfor %}
+  </div>
+</section>
+
+<section class="card mt-5 overflow-x-auto">
+  <h2 class="card-title">部門 × 費用科目矩陣</h2>
+  <table class="table mt-3">
+    <thead><tr><th>部門</th>{% for category in data.matrix.categories %}<th class="text-right">{{ category }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for dept in data.matrix.departments %}
+      {% with values=data.matrix.values|get_item:dept %}
+      <tr><td class="font-medium">{{ dept }}</td>{% for category in data.matrix.categories %}<td class="text-right">${{ values|get_item:category|money }}</td>{% endfor %}</tr>
+      {% endwith %}
+      {% empty %}
+      <tr><td colspan="2" class="text-center text-slate-500">無資料</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card mt-5 overflow-x-auto">
+  <h2 class="card-title">計畫預算執行</h2>
+  <table class="table mt-3">
+    <thead><tr><th>計畫</th><th class="text-right">預算</th><th class="text-right">已核銷</th><th class="text-right">執行率</th></tr></thead>
+    <tbody>
+      {% for project in data.projects %}
+      <tr><td><a class="text-brand-700 hover:underline dark:text-brand-300" href="{{ project.url }}">{{ project.code }} {{ project.name }}</a></td><td class="text-right">${{ project.budget|money }}</td><td class="text-right">${{ project.spent|money }}</td><td class="text-right"><span class="badge {% if project.rate >= 100 %}badge-rose{% elif project.rate >= 90 %}badge-amber{% else %}badge-emerald{% endif %}">{{ project.rate|percent }}</span></td></tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center text-slate-500">無資料</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
